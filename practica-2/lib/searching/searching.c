@@ -1,4 +1,5 @@
 #include "../search.h"
+#include "../BST.h"
 
 int linear_search(int *array, unsigned int size, int target)
 {
@@ -28,17 +29,13 @@ int binary_search(int *array, unsigned int size, int target)
 
 int binary_tree_search(int *array, unsigned int size, int target)
 {
-	   if (raiz == NULL) {
-        return -1;  
-    }
-    if (raiz->dato == target) {
-        return 1;  
-    }
-    if (target < raiz->dato) {
-        return binary_tree_search(raiz->izq, target);
-    } else {
-        return binary_tree_search(raiz->der, target);  
-    }
+	BST searchTree = createBST();
+	for (int i = 0; i < size; i++)
+		searchTree = insertBST(searchTree, array[i], i);
+	int index = searchBST(searchTree, target);
+	freeBST(searchTree);
+	return index;
+
 }
 
 int exponential_search(int *array, unsigned int size, int target)
