@@ -45,6 +45,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 // Libreria para la creación y manejo de arboles, codigos de huffman y
 // tablas de frecuencias
@@ -76,6 +77,59 @@ Arbol *get_frequencies(FILE *file, bool isExplicit, int *size);
  * @param size Numero de Arboles en el arreglo
  */
 void quick_sort(Arbol *array, unsigned int size);
+/**
+ * @brief Muestra los detalles de la compresión
+ *
+ * Calcula y muestra:
+ * - Tamaño del archivo original (en bytes)
+ * - Tamaño del archivo codificado (en bytes)
+ * - Nivel de compresión (porcentaje)
+ * - Total de bits codificados (sin contar la tabla de frecuencias)
+ *
+ * @param original Nombre del archivo original
+ * @param codificado Nombre del archivo codificado
+ */
+ void mostrarDetalles(char *original, char *codificado) {
+    FILE *orig = fopen(original, "rb");
+    FILE *cod = fopen(codificado, "rb");
+
+    if (!orig || !cod) {
+        printf("Error: no se pudieron abrir los archivos para obtener detalles.\n");
+        if (orig) fclose(orig);
+        if (cod) fclose(cod);
+        return;
+    }
+
+    fseek(orig, 0, SEEK_END);
+    long tamOriginal = ftell(orig);
+    fclose(orig);
+
+    fseek(cod, 0, SEEK_END);
+    long tamCodificado = ftell(cod);
+    rewind(cod);
+
+    const char *ext = strrchr(original, '.'); //Da la extensión del archivo 
+    if (ext) ext++; // Saltamos el punto
+
+    // Leer primer byte: bits válidos en el último byte
+    uint8_t bitsUltimo;
+    fread(&bitsUltimo, sizeof(uint8_t), 1, cod);
+    long totalBits = (tamCodificado - 1) * 8 - (8 - bitsUltimo);  // -1 por el byte inicial
+
+    fclose(cod);
+
+    double compresion = 100.0 * (1.0 - ((double)tamCodificado / (double)tamOriginal));
+
+    printf("\n**** Detalles de Compresion ****\n");
+    printf("Archivo original: %s\n", original);
+    printf("Tipo de archivo: %s\n", (ext ? ext : "Desconocido"));
+    printf("Tam original     : %ld bytes\n", tamOriginal);
+    printf("Tam codificado   : %ld bytes\n", tamCodificado);
+    printf("Compresion alcanzada: %.2f%%\n", compresion);
+    printf("Bits codificados    : %ld bits\n", totalBits);
+    printf("*******************************\n");
+}
+
 
 /**
  * @brief Codifica el archivo utilizando el algoritmo de huffman
@@ -130,6 +184,7 @@ int main(int argc, char *argv[])
  */
 void compressFile(char *fileName)
 {
+	clock_t inicio = clock();
 	FILE *file = fopen(fileName, "r"); //< Archivo de entrada a codificar
 	if (file == NULL) {
 		printf("Error: No se pudo abrir el archivo %s\n\n", fileName);
@@ -204,6 +259,12 @@ void compressFile(char *fileName)
 	rewind(newFile);
 	fwrite(&bitsPacked, 1, 1, newFile);
 	fclose(newFile);
+
+	mostrarDetalles(fileName, "./out/codificacion.dat");
+
+	clock_t fin = clock();
+        double tiempo = (double)(fin - inicio) / CLOCKS_PER_SEC;
+        printf("Tiempo de ejecucion: %.4f segundos\n", tiempo);
 }
 
 /**
